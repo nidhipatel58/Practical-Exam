@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recipe Book</title>
+    <link rel="stylesheet" href="css/all.min.css">
+    <link rel="stylesheet" href="css/animate.css">
+    <link rel="stylesheet" href="css/animate.min.css">
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/font.css">
+</head>
+
+<body>
+
+    <!-- Add Recipes -->
+
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-12">
+                <h1 class="text-center">Recipes Book</h1>
+                <form id="recipeForm">
+                    <div class="form-group">
+                        <label for="title">Title:</label>
+                        <input type="text" id="title" name="title" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="ingredients">Ingredients:</label>
+                        <textarea id="ingredients" name="ingredients" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="instructions">Instructions:</label>
+                        <textarea id="instructions" name="instructions" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="cuisine">Cuisine Type:</label>
+                        <select id="cuisine" name="cuisine" required>
+                            <option value="">Select Cuisine</option>
+                            <option value="Italian">Italian</option>
+                            <option value="Chinese">Chinese</option>
+                            <option value="Indian">Indian</option>
+                            <option value="Mexican">Mexican</option>
+                            <option value="American">American</option>
+                        </select>
+                    </div>
+                    <button type="submit" onclick="addRecipe(event)">Add Recipe</button>
+                </form>
+                <br /><br />
+                <div class="search-group">
+                    <label for="search">Search Recipes</label>
+                    <input type="text" id="search" placeholder="Search by title or ingredients" oninput="displayRecipes()">
+                </div>
+                <br />
+                <div class="recipe-list row" id="recipeList">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Recipe Modal -->
+    <div class="modal fade" id="editRecipeModal" tabindex="-1" aria-labelledby="editRecipeModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editRecipeModalLabel" style="color: blue;">UPDATE HERE :)</h5>
+                    <button type="button" class="btn-close" data-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="updateForm">
+                        <div class="form-group">
+                            <label for="updatetitle">Title:</label>
+                            <input type="text" class="form-control" id="updatetitle">
+                        </div>
+                        <div class="form-group">
+                            <label for="updateingredients">Ingredients:</label>
+                            <input type="text" class="form-control" id="updateingredients">
+                        </div>
+                        <div class="form-group">
+                            <label for="updateinstructions">Instructions:</label>
+                            <input type="text" class="form-control" id="updateinstructions">
+                        </div>
+                        <div class="form-group">
+                            <label for="updatecuisine">Cuisine Type:</label>
+                            <input type="text" class="form-control" id="updatecuisine">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" onclick="updateRecipe()">Save changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/jquery-3.6.0.min.js"></script>
+    <script src="js/bootstrap.bundle.min.js"></script>
+    <script src="js/wow.min.js"></script>
+
+    <script>
+        const recipes = JSON.parse(localStorage.getItem('recipes')) || [];
+        let currentEditIndex = -1;
+
+        document.getElementById('recipeForm').addEventListener('submit', function (event) {
+            event.preventDefault();
+            addRecipe();
+        });
+
+        function addRecipe() {
+            let title = document.getElementById("title").value;
+            let ingredients = document.getElementById("ingredients").value;
+            let instructions = document.getElementById("instructions").value;
+            let cuisine = document.getElementById("cuisine").value;
+
+            if (!title || !ingredients || !instructions || !cuisine) {
+                alert('Please fill in all fields');
+                return;
+            }
+
+            let newRecipe = {
+                title,
+                ingredients,
+                instructions,
+                cuisine
+            }
+
+            recipes.push(newRecipe);
+            localStorage.setItem('recipes', JSON.stringify(recipes));
+            displayRecipes();
+            document.getElementById("recipeForm").reset();
+        }
+
+        function displayRecipes() {
+            const recipeList = document.getElementById('recipeList');
+            recipeList.innerHTML = '';
+            const searchQuery = document.getElementById('search').value.toLowerCase();
+
+            const filteredRecipes = recipes.filter(recipe => {
+                return recipe.title.toLowerCase().includes(searchQuery) ||
+                    recipe.ingredients.toLowerCase().includes(searchQuery);
+            });
+
+            filteredRecipes.forEach((recipe, index) => {
+                const recipeItem = document.createElement('div');
+                recipeItem.classList.add('col-sm-4');
+                recipeItem.style = "width:18rem";
+                recipeItem.innerHTML = `
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h3 class="card-title">${recipe.title}</h3>
+                            <p class="card-text"><strong>Ingredients:</strong> ${recipe.ingredients}</p>
+                            <p class="card-text"><strong>Instructions:</strong> ${recipe.instructions}</p>
+                            <p class="card-text"><strong>Cuisine:</strong> ${recipe.cuisine}</p>
+                            <button class="edit-btn btn btn-primary" onclick="editRecipe(${index})">Edit</button>
+                            <button class="delete-btn btn btn-danger" onclick="deleteRecipe(${index})">Delete</button>
+                        </div>
+                    </div>
+                `;
+                recipeList.appendChild(recipeItem);
+            });
+        }
+
+        function deleteRecipe(index) {
+            recipes.splice(index, 1);
+            localStorage.setItem("recipes", JSON.stringify(recipes));
+            displayRecipes();   
+        }
+
+        function editRecipe(index) {
+            currentEditIndex = index;
+            const recipe = recipes[index];
+            document.getElementById('updatetitle').value = recipe.title;
+            document.getElementById('updateingredients').value = recipe.ingredients;
+            document.getElementById('updateinstructions').value = recipe.instructions;
+            document.getElementById('updatecuisine').value = recipe.cuisine;
+
+            $('#editRecipeModal').modal('show');
+        }
+
+        function updateRecipe() {
+            const title = document.getElementById('updatetitle').value;
+            const ingredients = document.getElementById('updateingredients').value;
+            const instructions = document.getElementById('updateinstructions').value;
+            const cuisine = document.getElementById('updatecuisine').value;
+
+            const updatedRecipe = {
+                title,
+                ingredients,
+                instructions,
+                cuisine
+            };
+
+            recipes[currentEditIndex] = updatedRecipe;
+            localStorage.setItem('recipes', JSON.stringify(recipes));
+            displayRecipes();
+            $('#editRecipeModal').modal('hide');
+        }
+
+        displayRecipes();
+
+        window.onload = displayRecipes;
+    </script>
+
+</body>
+
+</html>
